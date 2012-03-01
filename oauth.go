@@ -119,7 +119,7 @@ func (o *OAuthClient) GetRequestToken(callback string) *RequestToken {
 		"oauth_nonce":            nonce,
 		"oauth_callback":         URLEscape(callback),
 		"oauth_signature_method": "HMAC-SHA1",
-		"oauth_timestamp":        strconv.FormatInt(time.Now().UnixNano(), 10),
+		"oauth_timestamp":        strconv.FormatInt(time.Now().Unix(), 10),
 		"oauth_consumer_key":     o.ConsumerKey,
 		"oauth_version":          "1.0",
 	}
@@ -170,7 +170,7 @@ func (o *OAuthClient) GetAccessToken(requestToken *RequestToken, OAuthVerifier s
 		"oauth_token":            requestToken.OAuthToken,
 		"oauth_verifier":         OAuthVerifier,
 		"oauth_signature_method": "HMAC-SHA1",
-		"oauth_timestamp":        strconv.FormatInt(time.Now().UnixNano(), 10),
+		"oauth_timestamp":        strconv.FormatInt(time.Now().Unix(), 10),
 		"oauth_consumer_key":     o.ConsumerKey,
 		"oauth_version":          "1.0",
 	}
@@ -267,11 +267,12 @@ func (c *oauthStreamClient) readStream(resp *http.Response) {
 		if len(line) == 0 {
 			continue
 		}
-		var message SiteStreamMessage
-		json.Unmarshal(line, &message)
-		if message.Message.Id != 0 {
-			c.stream <- &message.Message
+		var message Tweet
+		err = json.Unmarshal(line, &message)
+		if err != nil {
+			fmt.Println("err")
 		}
+		c.stream <- &message
 	}
 }
 
@@ -288,7 +289,7 @@ func (o *OAuthClient) connect(url_ string, OAuthToken string, OAuthTokenSecret s
 		"oauth_nonce":            nonce,
 		"oauth_token":            OAuthToken,
 		"oauth_signature_method": "HMAC-SHA1",
-		"oauth_timestamp":        strconv.FormatInt(time.Now().UnixNano(), 10),
+		"oauth_timestamp":        strconv.FormatInt(time.Now().Unix(), 10),
 		"oauth_consumer_key":     o.ConsumerKey,
 		"oauth_version":          "1.0",
 	}
@@ -328,7 +329,6 @@ func (o *OAuthClient) connect(url_ string, OAuthToken string, OAuthTokenSecret s
 	if o.streamClient != nil {
 		o.streamClient.close()
 	}
-
 	resp, err := streamClient.connect()
 	if err != nil {
 		return err
@@ -354,6 +354,9 @@ func (o *OAuthClient) SiteStream(OAuthToken string, OAuthTokenSecret string, ids
 	}
 	params := map[string]string{"follow": buf.String()}
 	return o.connect(siteStreamUrl.String()/*Raw*/, OAuthToken, OAuthTokenSecret, params)
+}
+func (o *OAuthClient) UserStream(OAuthToken string, OAuthTokenSecret string) error {
+	return o.connect(userUrl.String()/*Raw*/, OAuthToken, OAuthTokenSecret, make(map[string]string))
 }
 
 // Close the client
