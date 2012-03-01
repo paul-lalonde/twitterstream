@@ -159,6 +159,10 @@ type nopCloser struct {
 
 func (nopCloser) Close() error { return nil }
 
+func getNopCloser(buf *bytes.Buffer) nopCloser {
+	return nopCloser{buf}
+}
+
 type Client struct {
 	Username     string
 	Password     string

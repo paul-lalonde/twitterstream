@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/paul-lalonde/httplib"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -32,7 +32,7 @@ type OAuthClient struct {
 }
 
 type oauthStreamClient struct {
-	httpClient *httplib.HttpRequestBuilder
+	request *http.Request
 	headers    map[string]string
 	params     map[string]string
 	url        string
@@ -137,11 +137,21 @@ func (o *OAuthClient) GetRequestToken(callback string) *RequestToken {
 		}
 		i++
 	}
-	request := httplib.Post(requestTokenUrl.String()/*Raw*/)
-	request.Header("Authorization", authBuf.String())
-	request.Body("")
-	resp, err := request.AsString()
-	tokens, err := url.ParseQuery(resp)
+	request, err := http.NewRequest("POST",requestTokenUrl.String(), nil)
+	if err != nil {
+		println(err.Error())
+	}
+	request.Header.Set("Authorization", authBuf.String())
+	//request.Body("")
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		println(err)
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		println(err)
+	}
+	tokens, err := url.ParseQuery(string(data))
 	if err != nil {
 		println(err.Error())
 	}
@@ -188,11 +198,20 @@ func (o *OAuthClient) GetAccessToken(requestToken *RequestToken, OAuthVerifier s
 		}
 		i++
 	}
-	request := httplib.Post(accessTokenUrl.String()/*Raw*/)
-	request.Header("Authorization", authBuf.String())
-	request.Body("")
-	resp, err := request.AsString()
-	tokens, err := url.ParseQuery(resp)
+	request, err := http.NewRequest("POST", accessTokenUrl.String(), nil)
+	if err != nil {
+		println(err)
+	}
+	request.Header.Set("Authorization", authBuf.String())
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		println(err)
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		println(err)
+	}
+	tokens, err := url.ParseQuery(string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -208,9 +227,11 @@ func (o *OAuthClient) GetAccessToken(requestToken *RequestToken, OAuthVerifier s
 }
 
 func (c *oauthStreamClient) connect() (*http.Response, error) {
-	c.httpClient = httplib.Post(c.url)
+	c.request, _ = http.NewRequest("POST", c.url, nil)
+	c.request.Header = http.Header{}
+	c.request.Header.Set("User-Agent", "ChimeraDemoTweetScraper")
 	for k, v := range c.headers {
-		c.httpClient.Header(k, v)
+		c.request.Header.Set(k, v)
 	}
 
 	var body bytes.Buffer
@@ -219,10 +240,9 @@ func (c *oauthStreamClient) connect() (*http.Response, error) {
 		body.WriteString("=")
 		body.WriteString(URLEscape(v))
 	}
-	c.httpClient.Body(body.String())
-
+	c.request.Body = getNopCloser(bytes.NewBufferString(body.String()))
 	//make the new connection
-	resp, err := c.httpClient.AsResponse()
+	resp, err := http.DefaultClient.Do(c.request)
 	if err != nil {
 		return resp, err
 	}
@@ -240,7 +260,7 @@ func (c *oauthStreamClient) readStream(resp *http.Response) {
 	for {
 		//we've been closed
 		if c.closed {
-			c.httpClient.Close()
+		//	c.httpClient.Close()
 			break
 		}
 		line, err := reader.ReadBytes('\n')
@@ -278,7 +298,7 @@ func (c *oauthStreamClient) readStream(resp *http.Response) {
 
 func (c *oauthStreamClient) close() {
 	c.closed = true
-	c.httpClient.Close()
+//	c.httpClient.Close()
 
 }
 
