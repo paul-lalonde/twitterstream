@@ -11,6 +11,6 @@ func main() {
     }
     for {
         tw := <-stream
-        println(tw.User.Screen_name, ": ", tw.Text)
+        println(tw.User.Name, ": ", tw.Text)
     }
 }
