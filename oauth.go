@@ -119,7 +119,7 @@ func (o *OAuthClient) GetRequestToken(callback string) *RequestToken {
 		"oauth_nonce":            nonce,
 		"oauth_callback":         URLEscape(callback),
 		"oauth_signature_method": "HMAC-SHA1",
-		"oauth_timestamp":        strconv.FormatInt(time.Now().UnixNano(), 10),
+		"oauth_timestamp":        strconv.FormatInt(time.Now().Unix(), 10),
 		"oauth_consumer_key":     o.ConsumerKey,
 		"oauth_version":          "1.0",
 	}
@@ -170,7 +170,7 @@ func (o *OAuthClient) GetAccessToken(requestToken *RequestToken, OAuthVerifier s
 		"oauth_token":            requestToken.OAuthToken,
 		"oauth_verifier":         OAuthVerifier,
 		"oauth_signature_method": "HMAC-SHA1",
-		"oauth_timestamp":        strconv.FormatInt(time.Now().UnixNano(), 10),
+		"oauth_timestamp":        strconv.FormatInt(time.Now().Unix(), 10),
 		"oauth_consumer_key":     o.ConsumerKey,
 		"oauth_version":          "1.0",
 	}
@@ -288,7 +288,7 @@ func (o *OAuthClient) connect(url_ string, OAuthToken string, OAuthTokenSecret s
 		"oauth_nonce":            nonce,
 		"oauth_token":            OAuthToken,
 		"oauth_signature_method": "HMAC-SHA1",
-		"oauth_timestamp":        strconv.FormatInt(time.Now().UnixNano(), 10),
+		"oauth_timestamp":        strconv.FormatInt(time.Now().Unix(), 10),
 		"oauth_consumer_key":     o.ConsumerKey,
 		"oauth_version":          "1.0",
 	}
