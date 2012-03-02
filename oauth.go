@@ -260,7 +260,7 @@ func (c *oauthStreamClient) readStream(resp *http.Response) {
 	for {
 		//we've been closed
 		if c.closed {
-		//	c.httpClient.Close()
+			resp.Body.Close()
 			break
 		}
 		line, err := reader.ReadBytes('\n')
